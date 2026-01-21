@@ -1,6 +1,9 @@
 # FasterBASIC Language Reference Manual
 
-Version 1.0.0
+Version 1.0  
+Copyright © 2024-2025 FasterBASIC Project
+Some of these may be forward looking statements
+---
 
 ## Table of Contents
 
@@ -10,34 +13,37 @@ Version 1.0.0
 4. [Variables and Constants](#variables-and-constants)
 5. [Operators](#operators)
 6. [Control Flow](#control-flow)
-7. [Loops](#loops)
-8. [Subroutines and Functions](#subroutines-and-functions)
-9. [Arrays](#arrays)
-10. [User-Defined Types](#user-defined-types)
-11. [Input/Output](#inputoutput)
-12. [File I/O](#file-io)
-13. [Built-in Functions](#built-in-functions)
-14. [Compiler Directives](#compiler-directives)
-15. [Graphics and Sprites](#graphics-and-sprites)
-16. [Event System and Timers](#event-system-and-timers)
+7. [Procedures and Functions](#procedures-and-functions)
+8. [Arrays](#arrays)
+9. [User-Defined Types](#user-defined-types)
+10. [Input/Output](#inputoutput)
+11. [File Operations](#file-operations)
+12. [String Functions](#string-functions)
+13. [Mathematical Functions](#mathematical-functions)
+14. [Timer and Events](#timer-and-events)
+15. [Graphics Commands](#graphics-commands)
+16. [Compiler Options](#compiler-options)
 17. [Plugin System](#plugin-system)
+18. [Built-in Functions Reference](#built-in-functions-reference)
+19. [Error Handling](#error-handling)
+20. [Best Practices](#best-practices)
 
 ---
 
 ## Introduction
 
-FasterBASIC is a modern BASIC dialect designed for high performance through LuaJIT compilation. It maintains compatibility with classic BASIC while adding modern features like user-defined types, Unicode support, and an event-driven programming model.
+FasterBASIC is a modern BASIC dialect designed to be familiar to classic BASIC programmers while providing high performance through LuaJIT compilation. It supports both line-numbered and label-based programming, structured control flow, user-defined types, and extensive graphics capabilities.
 
 ### Key Features
 
-- **Classic BASIC syntax** with line numbers (optional)
-- **Modern structured programming** (IF/ENDIF, WHILE/WEND, etc.)
-- **Strong type system** with user-defined types
-- **High performance** via LuaJIT JIT compilation
-- **Unicode string support**
-- **Event-driven programming** with timers
-- **Graphics and sprite system**
-- **Extensible plugin architecture**
+- **Classic BASIC Compatibility**: Line numbers, GOTO, GOSUB support
+- **Modern Structured Programming**: Functions, procedures, local variables
+- **High Performance**: LuaJIT-powered execution
+- **Rich Type System**: Integers, floats, doubles, strings, user-defined types
+- **Advanced Graphics**: Sprites, primitives, text layers
+- **Event System**: Timer-based events with cancellation support
+- **Unicode Support**: Full UTF-8 string handling
+- **Plugin Architecture**: Extensible command system
 
 ---
 
@@ -45,86 +51,78 @@ FasterBASIC is a modern BASIC dialect designed for high performance through LuaJ
 
 ### Line Numbers
 
-Line numbers are optional in FasterBASIC. Programs can use either:
+Programs can use optional line numbers in the classic BASIC style:
 
-**Traditional numbered style:**
 ```basic
-10 PRINT "Hello"
-20 FOR I = 1 TO 10
-30   PRINT I
-40 NEXT I
-50 END
+10 PRINT "Hello, World!"
+20 END
 ```
 
-**Modern unnumbered style:**
-```basic
-PRINT "Hello"
-FOR I = 1 TO 10
-  PRINT I
-NEXT I
-END
-```
+Line numbers must be integers and are typically used with GOTO/GOSUB. Modern code can omit line numbers entirely.
 
-**Mixed style:**
+### Labels
+
+Labels provide named jump targets without line numbers:
+
 ```basic
-PRINT "Starting..."
-100 FOR I = 1 TO 10
-    PRINT I
-NEXT I
-PRINT "Done"
+START:
+PRINT "Enter a number"
+INPUT N
+IF N < 0 THEN GOTO START
 ```
+Note you can use goto and gosub within reason.
+There are some restrictions, you should not use goto to jump in and out of structured loops, or goto in and out of a subroutine.
+It was simply not worth every degrading every programs performance to support arbitary leaps.
+
 
 ### Comments
 
 ```basic
 REM This is a comment
-PRINT "Hello"  REM Comments can follow statements
+' This is also a comment (single quote)
+PRINT "Code" REM inline comment
 ```
 
-### Statement Separators
-
-Multiple statements on one line can be separated by colons:
+### Program Termination
 
 ```basic
-10 X = 5 : Y = 10 : PRINT X + Y
+END                ' Terminate program
+
 ```
 
 ---
 
 ## Data Types
 
-### Numeric Types
+### Basic Types
 
-
-| Type | Suffix | Description | Range |
-|------|--------|-------------|-------|
-| INTEGER | % | 32-bit signed integer | -2,147,483,648 to 2,147,483,647 |
-| SINGLE | ! | Single precision float | ±3.4E±38 (7 digits) |
-| DOUBLE | # | Double precision float | ±1.7E±308 (15 digits) |
-| LONG | (none) | Alias for INTEGER | Same as INTEGER |
-
-### String Type
-
-| Type | Suffix | Description |
-|------|--------|-------------|
-| STRING | $ | Variable-length text | Up to available memory |
+| Type | Suffix | Size | Range | Description |
+|------|--------|------|-------|-------------|
+| `INTEGER` | `%` | 32-bit | ±2,147,483,647 | Whole numbers |
+| `FLOAT` | `!` | 32-bit | ±3.4E±38 | Single precision |
+| `DOUBLE` | `#` | 64-bit | ±1.7E±308 | Double precision |
+| `STRING` | `$` | Variable | N/A | Text data |
 
 ### Type Suffixes
 
-Variables can be typed using suffixes:
+Variables can use type suffixes for implicit typing:
 
 ```basic
-X% = 42         REM Integer
-Y! = 3.14       REM Single precision
-Z# = 3.14159265 REM Double precision
-NAME$ = "John"  REM String
+A% = 100        ' Integer
+B! = 3.14       ' Float
+C# = 1.23456789 ' Double
+D$ = "Hello"    ' String
 ```
 
-### Explicit Type Declaration
+Note that all numeric types such as float, double, integer are implemented in the code generation using the one Lua numeric type, but types are used for internal optimizations by the compiler.
+
+### Type Declarations
+
+Explicit type declarations using `AS`:
 
 ```basic
-DIM Age AS INTEGER
-DIM Pi AS DOUBLE
+DIM Count AS INTEGER
+DIM Price AS DOUBLE
 DIM Name AS STRING
 ```
 
@@ -132,50 +130,43 @@ DIM Name AS STRING
 
 ## Variables and Constants
 
-### Variable Names
-
-- Must start with a letter (A-Z, case insensitive)
-- Can contain letters, digits, and underscores
-- Type suffix (%, !, #, $) is optional
-
-```basic
-X = 10
-Counter% = 0
-Temperature# = 98.6
-UserName$ = "Alice"
-My_Variable = 100
-```
-
 ### Variable Declaration
 
-Variables can be declared explicitly or used implicitly:
-
 ```basic
-REM Implicit (classic BASIC style)
+' Implicit declaration (type from suffix or first use)
 X = 10
+Name$ = "Alice"
 
-REM Explicit (modern style)
-DIM X AS INTEGER
-X = 10
+' Explicit declaration
+DIM Age AS INTEGER
+DIM Score AS DOUBLE
 ```
 
 ### Constants
 
 ```basic
 CONSTANT PI = 3.14159265
-CONSTANT MAX_ITEMS = 100
-CONSTANT APP_NAME = "MyApp"
+CONSTANT MAX_PLAYERS = 4
+CONSTANT APP_NAME = "My Game"
 ```
 
-### OPTION EXPLICIT
+Constants are evaluated at compile time and cannot be changed.
 
-Force all variables to be declared:
+### Variable Scope
+
+- **Global**: Declared at program level, accessible everywhere
+- **Local**: Declared in SUB/FUNCTION with `DIM` or `LOCAL`
+- **Shared**: Global variables accessed in SUB/FUNCTION with `SHARED`
 
 ```basic
-OPTION EXPLICIT
-DIM X AS INTEGER  REM Required
-X = 10            REM OK
-Y = 20            REM Error: Y not declared
+DIM GlobalVar AS INTEGER
+
+SUB MySub()
+    LOCAL LocalVar AS INTEGER
+    SHARED GlobalVar
+    LocalVar = 10
+    GlobalVar = 20
+END SUB
 ```
 
 ---
@@ -184,61 +175,63 @@ Y = 20            REM Error: Y not declared
 
 ### Arithmetic Operators
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| + | Addition | 5 + 3 = 8 |
-| - | Subtraction | 5 - 3 = 2 |
-| * | Multiplication | 5 * 3 = 15 |
-| / | Division (float) | 5 / 2 = 2.5 |
-| \ | Integer division | 5 \ 2 = 2 |
-| ^ | Exponentiation | 2 ^ 3 = 8 |
-| MOD | Modulo | 5 MOD 2 = 1 |
+| Operator | Operation | Example |
+|----------|-----------|---------|
+| `+` | Addition | `A + B` |
+| `-` | Subtraction | `A - B` |
+| `*` | Multiplication | `A * B` |
+| `/` | Division | `A / B` |
+| `\` | Integer Division | `A \ B` |
+| `^` | Exponentiation | `A ^ B` |
+| `MOD` | Modulo | `A MOD B` |
 
 ### Comparison Operators
 
-| Operator | Description | Example |
-|----------|-------------|---------|
-| = | Equal | A = B |
-| <> | Not equal | A <> B |
-| < | Less than | A < B |
-| <= | Less or equal | A <= B |
-| > | Greater than | A > B |
-| >= | Greater or equal | A >= B |
+| Operator | Meaning | Example |
+|----------|---------|---------|
+| `=` | Equal | `A = B` |
+| `<>` | Not equal | `A <> B` |
+| `<` | Less than | `A < B` |
+| `<=` | Less or equal | `A <= B` |
+| `>` | Greater than | `A > B` |
+| `>=` | Greater or equal | `A >= B` |
 
 ### Logical Operators
 
-| Operator | Description | Behavior |
-|----------|-------------|----------|
-| AND | Logical AND | TRUE if both operands are TRUE |
-| OR | Logical OR | TRUE if either operand is TRUE |
-| NOT | Logical NOT | Inverts boolean value |
-| XOR | Exclusive OR | TRUE if operands differ |
-| EQV | Equivalence | TRUE if operands are same |
-| IMP | Implication | FALSE only if first is TRUE and second is FALSE |
-
-#### OPTION BITWISE vs OPTION LOGICAL
-
 ```basic
-OPTION BITWISE
-X = 5 AND 3     REM Bitwise: 5 AND 3 = 1
+OPTION LOGICAL      ' Use TRUE/FALSE for logical operations
+OPTION BITWISE      ' Use bitwise operations (default)
 
-OPTION LOGICAL
-X = 5 AND 3     REM Logical: TRUE AND TRUE = TRUE (non-zero = TRUE)
+' Logical mode
+IF (A > 0) AND (B > 0) THEN PRINT "Both positive"
+IF (X = 0) OR (Y = 0) THEN PRINT "At least one zero"
+
+' Bitwise mode (operates on integer bits)
+Flags = Flag1 OR Flag2
+Mask = Value AND &HFF
 ```
+
+| Operator | Logical Mode | Bitwise Mode |
+|----------|--------------|--------------|
+| `AND` | Logical AND | Bitwise AND |
+| `OR` | Logical OR | Bitwise OR |
+| `NOT` | Logical NOT | Bitwise NOT |
+| `XOR` | Logical XOR | Bitwise XOR |
+| `EQV` | Equivalence | Bitwise EQV |
+| `IMP` | Implication | Bitwise IMP |
 
 ### Operator Precedence
 
-1. Parentheses `()`
-2. Exponentiation `^`
-3. Unary minus `-`
-4. Multiplication `*`, Division `/`, Integer Division `\`
-5. Modulo `MOD`
-6. Addition `+`, Subtraction `-`
-7. Comparison `=`, `<>`, `<`, `<=`, `>`, `>=`
-8. NOT
-9. AND
-10. OR, XOR
-11. EQV, IMP
+1. `()` - Parentheses
+2. `^` - Exponentiation
+3. `-` - Unary minus
+4. `*`, `/`, `\`, `MOD` - Multiplication, division
+5. `+`, `-` - Addition, subtraction
+6. `=`, `<>`, `<`, `<=`, `>`, `>=` - Comparison
+7. `NOT` - Logical/bitwise NOT
+8. `AND` - Logical/bitwise AND
+9. `OR`, `XOR` - Logical/bitwise OR, XOR
+10. `EQV`, `IMP` - Equivalence, implication
 
 ---
 
@@ -246,396 +239,366 @@ X = 5 AND 3     REM Logical: TRUE AND TRUE = TRUE (non-zero = TRUE)
 
 ### IF Statement
 
-**Single-line IF:**
 ```basic
-IF X > 10 THEN PRINT "X is large"
-IF X > 10 THEN X = 10
-```
+' Single-line IF
+IF X > 0 THEN PRINT "Positive"
 
-**Multi-line IF/ENDIF:**
-```basic
-IF Score >= 90 THEN
-  Grade$ = "A"
-  PRINT "Excellent!"
-ENDIF
-```
+' Multi-line IF
+IF Score > 90 THEN
+    PRINT "Grade: A"
+    Bonus = 100
+END IF
 
-**IF/ELSE:**
-```basic
+' IF...ELSE
 IF Age >= 18 THEN
-  PRINT "Adult"
+    PRINT "Adult"
 ELSE
-  PRINT "Minor"
-ENDIF
-```
+    PRINT "Minor"
+END IF
 
-**IF/ELSEIF/ELSE:**
-```basic
+' IF...ELSEIF...ELSE
 IF Score >= 90 THEN
-  Grade$ = "A"
+    Grade$ = "A"
 ELSEIF Score >= 80 THEN
-  Grade$ = "B"
+    Grade$ = "B"
 ELSEIF Score >= 70 THEN
-  Grade$ = "C"
+    Grade$ = "C"
 ELSE
-  Grade$ = "F"
-ENDIF
+    Grade$ = "F"
+END IF
 ```
 
-**Traditional single-line IF/THEN/ELSE:**
+### SELECT CASE Statement
+
 ```basic
-10 IF X > 0 THEN PRINT "Positive" ELSE PRINT "Non-positive"
+SELECT CASE DayNum
+    CASE 1
+        PRINT "Monday"
+    CASE 2
+        PRINT "Tuesday"
+    CASE 6, 7
+        PRINT "Weekend"
+    CASE ELSE
+        PRINT "Other day"
+END CASE
+
+' With expressions
+SELECT CASE Score
+    CASE IS >= 90
+        Grade$ = "A"
+    CASE IS >= 80
+        Grade$ = "B"
+    CASE ELSE
+        Grade$ = "F"
+END CASE
+```
+Note the BBC BASIC case statements are
+also supported if you prefer those.
+
+### FOR Loop
+
+```basic
+' Basic FOR loop
+FOR I = 1 TO 10
+    PRINT I
+NEXT I
+
+' With STEP
+FOR X = 0 TO 100 STEP 5
+    PRINT X
+NEXT X
+
+' Countdown
+FOR Count = 10 TO 1 STEP -1
+    PRINT Count
+NEXT Count
+
+' Nested loops
+FOR Row = 1 TO 5
+    FOR Col = 1 TO 5
+        PRINT Row * Col;
+    NEXT Col
+    PRINT
+NEXT Row
 ```
 
-### SELECT CASE
+### FOR...IN Loop
 
 ```basic
-SELECT CASE Day
-  CASE 1
-    PRINT "Monday"
-  CASE 2
-    PRINT "Tuesday"
-  CASE 3, 4, 5
-    PRINT "Midweek"
-  CASE 6, 7
-    PRINT "Weekend"
-  OTHERWISE
-    PRINT "Invalid day"
-ENDCASE
+' Iterate over array
+DIM Names$(5)
+Names$(1) = "Alice"
+Names$(2) = "Bob"
+Names$(3) = "Carol"
+
+FOR Name$ IN Names$
+    PRINT Name$
+NEXT Name$
+```
+
+### WHILE Loop
+
+```basic
+WHILE Condition
+    ' Loop body
+WEND
+
+' Example
+Count = 0
+WHILE Count < 10
+    PRINT Count
+    Count = Count + 1
+WEND
+```
+
+### DO...LOOP
+
+```basic
+' DO WHILE (condition checked at start)
+DO WHILE X < 100
+    X = X * 2
+LOOP
+
+' DO UNTIL (condition checked at start)
+DO UNTIL Done
+    PRINT "Processing..."
+LOOP
+
+' REPEAT...UNTIL (condition checked at end)
+REPEAT
+    INPUT "Enter password: ", Pass$
+UNTIL Pass$ = "secret"
 ```
 
 ### GOTO and GOSUB
 
 ```basic
-REM GOTO - Jump to a line
-10 PRINT "Start"
-20 GOTO 100
-30 PRINT "This is skipped"
-100 PRINT "End"
+' GOTO - Unconditional jump
+GOTO 100
+100 PRINT "Jumped here"
 
-REM GOSUB/RETURN - Call a subroutine
-10 PRINT "Main"
-20 GOSUB 1000
-30 PRINT "Back in main"
-40 END
+' GOSUB - Call subroutine
+GOSUB 1000
+PRINT "After subroutine"
+END
+
 1000 REM Subroutine
-1010 PRINT "In subroutine"
-1020 RETURN
+    PRINT "In subroutine"
+    RETURN
 ```
 
-### ON GOTO/GOSUB
+### ON...GOTO and ON...GOSUB
 
 ```basic
-REM Branch based on expression value
-10 INPUT "Choice (1-3)"; Choice
-20 ON Choice GOTO 100, 200, 300
-30 PRINT "Invalid choice"
-40 END
-100 PRINT "Option 1" : GOTO 40
-200 PRINT "Option 2" : GOTO 40
-300 PRINT "Option 3" : GOTO 40
-```
+' ON...GOTO
+INPUT "Select 1-3: ", Choice
+ON Choice GOTO 100, 200, 300
 
----
+100 PRINT "Option 1": GOTO 400
+200 PRINT "Option 2": GOTO 400
+300 PRINT "Option 3"
+400 END
 
-## Loops
-
-### FOR/NEXT Loop
-
-```basic
-REM Basic FOR loop
-FOR I = 1 TO 10
-  PRINT I
-NEXT I
-
-REM FOR loop with STEP
-FOR I = 0 TO 100 STEP 10
-  PRINT I
-NEXT I
-
-REM Countdown
-FOR I = 10 TO 1 STEP -1
-  PRINT I
-NEXT I
-
-REM Nested loops
-FOR I = 1 TO 3
-  FOR J = 1 TO 3
-    PRINT I; ","; J
-  NEXT J
-NEXT I
-```
-
-### WHILE/WEND Loop
-
-```basic
-I = 1
-WHILE I <= 10
-  PRINT I
-  I = I + 1
-WEND
-```
-
-### DO/LOOP
-
-```basic
-REM DO WHILE ... LOOP (test at top)
-I = 1
-DO WHILE I <= 10
-  PRINT I
-  I = I + 1
-LOOP
-
-REM DO ... LOOP UNTIL (test at bottom)
-I = 1
-DO
-  PRINT I
-  I = I + 1
-LOOP UNTIL I > 10
-
-REM DO ... LOOP (infinite loop, use EXIT to break)
-DO
-  INPUT "Enter 0 to quit"; X
-  IF X = 0 THEN EXIT DO
-  PRINT "You entered"; X
-LOOP
-```
-
-### REPEAT/UNTIL Loop
-
-```basic
-I = 1
-REPEAT
-  PRINT I
-  I = I + 1
-UNTIL I > 10
+' ON...GOSUB
+ON MenuChoice GOSUB HandleFile, HandleEdit, HandleView
 ```
 
 ### EXIT Statement
 
 ```basic
-REM Exit a FOR loop early
-FOR I = 1 TO 100
-  IF I = 50 THEN EXIT FOR
-  PRINT I
+' EXIT FOR - Exit a FOR loop early
+FOR I = 1 TO 1000
+    IF Found THEN EXIT FOR
+    ' Search logic
 NEXT I
 
-REM Exit a WHILE loop
-WHILE TRUE
-  INPUT "Command"; Cmd$
-  IF Cmd$ = "QUIT" THEN EXIT WHILE
-  PRINT "Processing:"; Cmd$
-WEND
+' EXIT FUNCTION - Return from function
+FUNCTION FindValue(Arr(), Target)
+    FOR I = 1 TO UBOUND(Arr)
+        IF Arr(I) = Target THEN EXIT FUNCTION I
+    NEXT I
+    EXIT FUNCTION -1
+END FUNCTION
 
-REM Exit a function or subroutine
-SUB Process()
-  IF Error THEN EXIT SUB
-  REM ... more code
+' EXIT SUB - Return from subroutine
+SUB ProcessData()
+    IF DataEmpty THEN EXIT SUB
+    ' Process logic
 END SUB
 ```
+
+Note that the index variable can not be
+changed in a FOR NEXT loop, you can not
+exit a loop by changing the index. 
+Use EXIT FOR instead.
 
 ---
 
-## Subroutines and Functions
+## Procedures and Functions
 
-### SUB (Subroutine)
+### Subroutines (SUB)
 
 ```basic
-REM Define a subroutine
-SUB Greet(Name$)
-  PRINT "Hello, "; Name$; "!"
+SUB Greet(Name AS STRING)
+    PRINT "Hello, "; Name; "!"
 END SUB
 
-REM Call the subroutine
-Greet("Alice")
-CALL Greet("Bob")
+CALL Greet("Alice")
+Greet("Bob")  ' CALL is optional
 ```
 
-### FUNCTION
-
-```basic
-REM Define a function
-FUNCTION Add(A, B)
-  Add = A + B
-END FUNCTION
-
-REM Call the function
-Result = Add(5, 3)
-PRINT "5 + 3 ="; Result
-```
-
-### Parameters
-
-**Pass by value (default):**
-```basic
-FUNCTION Double(X)
-  X = X * 2
-  Double = X
-END FUNCTION
-
-A = 5
-B = Double(A)
-PRINT A  REM Still 5
-PRINT B  REM 10
-```
-
-**Pass by reference:**
-```basic
-SUB Increment(BYREF X)
-  X = X + 1
-END SUB
-
-A = 5
-Increment(A)
-PRINT A  REM Now 6
-```
-
-### Type Declarations
+### Functions
 
 ```basic
 FUNCTION Square(X AS DOUBLE) AS DOUBLE
-  Square = X * X
+    Square = X * X
 END FUNCTION
 
-SUB SetName(BYREF Name$ AS STRING)
-  Name$ = "John"
-END SUB
+FUNCTION Max(A AS INTEGER, B AS INTEGER) AS INTEGER
+    IF A > B THEN
+        Max = A
+    ELSE
+        Max = B
+    END IF
+END FUNCTION
+
+' Using functions
+Result = Square(5)
+Largest = Max(10, 20)
 ```
 
-### LOCAL and SHARED Variables
+### Parameter Passing
 
 ```basic
-DIM GlobalVar AS INTEGER
-GlobalVar = 100
+' By value (default) - copy of value passed
+SUB Increment(Value AS INTEGER)
+    Value = Value + 1  ' Only changes local copy
+END SUB
 
-SUB Test()
-  LOCAL LocalVar AS INTEGER
-  SHARED GlobalVar
-  
-  LocalVar = 10    REM Local to this SUB
-  GlobalVar = 200  REM Modifies global variable
+' By reference - original variable modified
+SUB IncrementRef(BYREF Value AS INTEGER)
+    Value = Value + 1  ' Changes original
+END SUB
+
+DIM X AS INTEGER
+X = 10
+CALL Increment(X)      ' X still 10
+CALL IncrementRef(X)   ' X now 11
+```
+
+### Local and Shared Variables
+
+```basic
+DIM GlobalCount AS INTEGER
+
+SUB UpdateCount()
+    ' Declare local variable
+    LOCAL Temp AS INTEGER
+    
+    ' Access global variable
+    SHARED GlobalCount
+    
+    Temp = 100
+    GlobalCount = GlobalCount + 1
 END SUB
 ```
 
 ### DEF FN (Single-line Functions)
 
 ```basic
-DEF FN_DOUBLE(X) = X * 2
-DEF FN_SQUARE(X) = X * X
+' Define single-line function
+DEF FN Double(X) = X * 2
+DEF FN Hypotenuse(A, B) = SQR(A^2 + B^2)
 
-PRINT FN_DOUBLE(5)  REM 10
-PRINT FN_SQUARE(4)  REM 16
+' Use functions
+Result = FN Double(5)
+Distance = FN Hypotenuse(3, 4)
 ```
-
 
 ---
 
 ## Arrays
 
-### Declaration
+### Array Declaration
 
 ```basic
-REM Single dimension array
-DIM Numbers(100) AS INTEGER
-DIM Names$(50) AS STRING
+' 1D array (OPTION BASE 1 default - indices 1 to 10)
+DIM Numbers(10) AS INTEGER
 
-REM Multi-dimensional array
-DIM Grid(10, 10) AS INTEGER
-DIM Matrix#(3, 3) AS DOUBLE
+' OPTION BASE 0 - indices 0 to 9
+OPTION BASE 0
+DIM Values(10) AS DOUBLE
+
+' Multi-dimensional arrays
+DIM Matrix(5, 5) AS INTEGER
+DIM Grid(10, 10, 10) AS DOUBLE
 ```
 
-### Array Indexing
+### Array Initialization
 
 ```basic
-OPTION BASE 1  REM Arrays start at index 1 (default)
-DIM A(10)
-A(1) = 100     REM First element
-A(10) = 999    REM Last element
+' Individual elements
+Numbers(1) = 100
+Numbers(2) = 200
 
-OPTION BASE 0  REM Arrays start at index 0
-DIM B(10)
-B(0) = 100     REM First element
-B(10) = 999    REM Last element (11 elements total)
+' Fill entire array with value
+Numbers() = 0
+
+' Using expressions for dimensions
+Size = 100
+DIM Buffer(Size) AS INTEGER
 ```
 
 ### Array Operations
 
-**Fill entire array:**
 ```basic
-DIM Numbers(100) AS INTEGER
-Numbers() = 42  REM Fill all elements with 42
-```
+' REDIM - Resize array (loses data)
+REDIM Numbers(20)
 
-**Array bounds:**
-```basic
-DIM A(10, 5) AS INTEGER
-Lower1 = LBOUND(A, 1)  REM Lower bound of dimension 1
-Upper1 = UBOUND(A, 1)  REM Upper bound of dimension 1
-Lower2 = LBOUND(A, 2)  REM Lower bound of dimension 2
-Upper2 = UBOUND(A, 2)  REM Upper bound of dimension 2
-```
+' REDIM PRESERVE - Resize and keep data
+REDIM PRESERVE Numbers(20)
 
-### REDIM - Resize Arrays
+' ERASE - Deallocate array
+ERASE Numbers
 
-```basic
-REM Initial size
-DIM A(10) AS INTEGER
-
-REM Resize (data is lost)
-REDIM A(20)
-
-REM Resize but preserve data
-REDIM PRESERVE A(30)
-```
-
-### ERASE - Clear Arrays
-
-```basic
-DIM A(100) AS INTEGER
-A() = 42
-ERASE A  REM Deallocate/clear array
-```
-
-### SWAP - Swap Variables
-
-```basic
-A = 10
-B = 20
+' SWAP - Exchange two variables/array elements
 SWAP A, B
-PRINT A  REM Now 20
-PRINT B  REM Now 10
+SWAP Array(1), Array(10)
 ```
 
-### INC/DEC - Increment/Decrement
+### Array Bounds
 
 ```basic
-Counter = 0
-INC Counter     REM Counter = 1
-INC Counter, 5  REM Counter = 6
-DEC Counter     REM Counter = 5
-DEC Counter, 2  REM Counter = 3
+' Get array bounds
+DIM MyArray(50) AS INTEGER
+Lower = LBOUND(MyArray)  ' Returns 1 (or 0 if OPTION BASE 0)
+Upper = UBOUND(MyArray)  ' Returns 50
+
+' Use in loops
+FOR I = LBOUND(MyArray) TO UBOUND(MyArray)
+    MyArray(I) = I * 10
+NEXT I
+```
+
+### Array Arithmetic (SIMD)
+
+```basic
+' Whole array operations (optimized with SIMD)
+DIM A(100) AS DOUBLE
+DIM B(100) AS DOUBLE
+DIM C(100) AS DOUBLE
+
+A() = 1.0           ' Fill with constant
+B() = 2.0
+C() = A() + B()     ' Element-wise addition
+A() = A() * 2.0     ' Scale all elements
 ```
 
 ---
 
 ## User-Defined Types
 
-### TYPE Declaration
-
-```basic
-TYPE Point
-    X AS DOUBLE
-    Y AS DOUBLE
-END TYPE
-
-TYPE Person
-    Name AS STRING
-    Age AS INTEGER
-    Score AS DOUBLE
-END TYPE
-```
-
-### Nested Types
+### Defining Types
 
 ```basic
 TYPE Point
@@ -645,62 +608,46 @@ END TYPE
 
 TYPE Sprite
     Name AS STRING
-    Position AS Point
-    Velocity AS Point
+    Position AS Point    ' Nested type
     Active AS INTEGER
+    Health AS DOUBLE
 END TYPE
 ```
 
 ### Using Types
 
 ```basic
-REM Declare variable of custom type
-DIM P AS Point
-P.X = 100
-P.Y = 200
-PRINT "Point: ("; P.X; ", "; P.Y; ")"
+' Declare variable of custom type
+DIM Player AS Sprite
+DIM Enemy AS Sprite
 
-REM Nested member access
-DIM S AS Sprite
-S.Name = "Player"
-S.Position.X = 50
-S.Position.Y = 75
-S.Velocity.X = 2.5
-S.Velocity.Y = -1.5
+' Access members
+Player.Name = "Hero"
+Player.Position.X = 100
+Player.Position.Y = 200
+Player.Health = 100.0
 
-PRINT "Sprite: "; S.Name
-PRINT "Position: ("; S.Position.X; ", "; S.Position.Y; ")"
-```
-
-### Arrays of Types
-
-```basic
-TYPE Enemy
-    Name AS STRING
-    Health AS INTEGER
-    X AS INTEGER
-    Y AS INTEGER
-END TYPE
-
-DIM Enemies(10) AS Enemy
-
+' Arrays of custom types
+DIM Enemies(10) AS Sprite
 Enemies(1).Name = "Goblin"
-Enemies(1).Health = 50
-Enemies(1).X = 100
-Enemies(1).Y = 150
+Enemies(1).Position.X = 50
+Enemies(1).Health = 30
+
+' 2D arrays of types
+DIM Grid(10, 10) AS Point
+Grid(5, 5).X = 100
+Grid(5, 5).Y = 200
 ```
 
-### Multi-dimensional Type Arrays
+### Type Member Access in Expressions
 
 ```basic
-TYPE Cell
-    Value AS INTEGER
-    Label AS STRING
-END TYPE
+Distance = Player.Position.X + Player.Position.Y
+TotalHealth = Player.Health + Enemy.Health
 
-DIM Grid(10, 10) AS Cell
-Grid(5, 5).Value = 42
-Grid(5, 5).Label = "Center"
+IF Player.Position.X > Enemy.Position.X THEN
+    PRINT "Player is to the right"
+END IF
 ```
 
 ---
@@ -710,978 +657,698 @@ Grid(5, 5).Label = "Center"
 ### PRINT Statement
 
 ```basic
-REM Basic output
-PRINT "Hello, World!"
+' Basic output
+PRINT "Hello"
+PRINT X
+PRINT "Value:", X
 
-REM Multiple items (space-separated)
-PRINT "X ="; X; "Y ="; Y
+' Multiple items (comma = tab spacing)
+PRINT "Name", "Age", "Score"
+PRINT Name$, Age, Score
 
-REM Semicolon (no space)
-PRINT "Name:"; Name$
+' Semicolon = no spacing
+PRINT "X="; X; " Y="; Y
 
-REM Comma (tab spacing)
-PRINT "A", "B", "C"
-
-REM No newline (continue on same line)
+' Suppress newline with trailing semicolon
 PRINT "Loading";
-PRINT ".";
-PRINT ".";
 PRINT "."
-```
 
-### ? (Shorthand for PRINT)
+' Question mark shorthand
+? "Hello World"
 
-```basic
-? "Hello"  REM Same as PRINT "Hello"
-? X, Y     REM Same as PRINT X, Y
+' Formatted output with USING
+PRINT USING "###.##"; Value
+PRINT USING "Name: @@@@@@@@@@"; Name$
 ```
 
 ### INPUT Statement
 
 ```basic
-REM Simple input
+' Basic input
 INPUT X
+INPUT Name$
 
-REM Input with prompt
-INPUT "Enter your name"; Name$
+' With prompt
+INPUT "Enter your name: ", Name$
+INPUT "Enter age: ", Age
 
-REM Multiple inputs
-INPUT "Enter X and Y"; X, Y
-
-REM Input without newline after prompt
-INPUT "Password"; Password$
+' Multiple values
+INPUT "Enter X and Y: ", X, Y
 ```
 
-### LINE INPUT
+### Console Output
 
 ```basic
-REM Read entire line (including spaces and commas)
-LINE INPUT "Enter text"; Text$
+' Output to console (separate from screen output)
+CONSOLE "Debug: X =", X
+CONSOLE "Warning: Invalid value"
 ```
 
-### CLS - Clear Screen
+### Cursor Positioning
 
 ```basic
-CLS  REM Clear the terminal screen
-```
-
-### COLOR - Set Text Color
-
-```basic
-REM Set foreground color (0-15)
-COLOR 14  REM Yellow text
-
-REM Set foreground and background
-COLOR 15, 1  REM White on blue
-```
-
-### LOCATE - Position Cursor
-
-```basic
-REM Position cursor at row, column
-LOCATE 10, 20
+' AT - Position cursor (row, column)
+AT 10, 20
 PRINT "Text at row 10, column 20"
+
+' LOCATE - QuickBASIC style
+LOCATE 5, 10
+PRINT "Row 5, Column 10"
+
+' PRINT_AT - Print at specific position
+PRINT_AT 15, 25, "Positioned text"
+
+' INPUT_AT - Input at specific position
+INPUT_AT 20, 10, "Enter name: ", Name$
 ```
 
-### AT - Position Cursor (alternate syntax)
+### Text Manipulation
 
 ```basic
-AT 5, 10
-PRINT "Row 5, Column 10"
+' Put single character
+TCHAR 10, 10, 65, 15  ' Put 'A' at (10,10) in color 15
+
+' Put text with color
+TEXTPUT 5, 5, "Colored text", 14
+
+' Set text grid size
+TGRID 80, 25
+
+' Scroll text region
+TSCROLL 0, 0, 80, 25, 0, -1  ' Scroll up one line
+
+' Clear text region
+TCLEAR 0, 0, 80, 25
+```
+
+### Screen Control
+
+```basic
+' Clear screen
+CLS
+
+' Set colors
+COLOR 15, 1  ' White on blue background
+
+' Wait for vertical sync
+VSYNC
 ```
 
 ---
 
-## File I/O
+## File Operations
 
-### OPEN - Open File
+### Opening Files
 
 ```basic
-REM Open for input
+' Open file for reading
 OPEN "data.txt" FOR INPUT AS #1
 
-REM Open for output (create/overwrite)
+' Open file for writing
 OPEN "output.txt" FOR OUTPUT AS #2
 
-REM Open for append
+' Open file for appending
 OPEN "log.txt" FOR APPEND AS #3
-```
 
-### CLOSE - Close File
-
-```basic
-CLOSE #1          REM Close specific file
-CLOSE #1, #2, #3  REM Close multiple files
-CLOSE             REM Close all open files
-```
-
-### PRINT# - Write to File
-
-```basic
-OPEN "output.txt" FOR OUTPUT AS #1
-PRINT #1, "Hello, World!"
-PRINT #1, "X ="; X
+' Close files
 CLOSE #1
+CLOSE #2
+CLOSE #3
+
+' Close all files
+CLOSE
 ```
 
-### INPUT# - Read from File
+### Reading from Files
 
 ```basic
-OPEN "data.txt" FOR INPUT AS #1
-INPUT #1, Name$, Age
-INPUT #1, Score
+' Read formatted data
+OPEN "scores.txt" FOR INPUT AS #1
+INPUT #1, Name$, Score
 CLOSE #1
-```
 
-### LINE INPUT# - Read Line from File
-
-```basic
-OPEN "text.txt" FOR INPUT AS #1
-LINE INPUT #1, Line$
-PRINT Line$
-CLOSE #1
-```
-
-### WRITE# - Write with Quoting
-
-```basic
-REM Writes data with quotes and commas (CSV format)
-OPEN "data.csv" FOR OUTPUT AS #1
-WRITE #1, "John", 30, 95.5
-WRITE #1, "Jane", 25, 87.3
-CLOSE #1
-```
-
-### EOF() - End of File
-
-```basic
+' Read line by line
 OPEN "data.txt" FOR INPUT AS #1
 WHILE NOT EOF(1)
-    LINE INPUT #1, Line$
-    PRINT Line$
+    LINE INPUT #1, TextLine$
+    PRINT TextLine$
 WEND
 CLOSE #1
 ```
 
----
-
-## Built-in Functions
-
-### Mathematical Functions
+### Writing to Files
 
 ```basic
-ABS(x)          REM Absolute value
-SGN(x)          REM Sign: -1, 0, or 1
-INT(x)          REM Integer part (floor for positive)
-FIX(x)          REM Truncate towards zero
-SQR(x)          REM Square root
-EXP(x)          REM e raised to x
-LOG(x)          REM Natural logarithm
-SIN(x)          REM Sine (radians)
-COS(x)          REM Cosine (radians)
-TAN(x)          REM Tangent (radians)
-ATN(x)          REM Arctangent (radians)
-RND(x)          REM Random number 0 to 1
+' Write formatted data
+OPEN "output.txt" FOR OUTPUT AS #1
+PRINT #1, "Name", "Score"
+PRINT #1, Name$, Score
+CLOSE #1
+
+' Write with WRITE# (adds quotes around strings)
+OPEN "data.csv" FOR OUTPUT AS #1
+WRITE #1, Name$, Age, Score
+CLOSE #1
 ```
 
-**Random number examples:**
-```basic
-REM Random integer from 1 to 100
-X = INT(RND(1) * 100) + 1
-
-REM Random float from 0 to 1
-Y = RND(1)
-```
-
-### String Functions
+### File Functions
 
 ```basic
-LEN(s$)         REM Length of string
-LEFT$(s$, n)    REM Left n characters
-RIGHT$(s$, n)   REM Right n characters
-MID$(s$, start) REM Substring from start to end
-MID$(s$, start, len) REM Substring of length len
-LTRIM$(s$)      REM Remove leading spaces
-RTRIM$(s$)      REM Remove trailing spaces
-TRIM$(s$)       REM Remove leading and trailing spaces
-UCASE$(s$)      REM Convert to uppercase
-LCASE$(s$)      REM Convert to lowercase
-STR$(x)         REM Convert number to string
-VAL(s$)         REM Convert string to number
-CHR$(n)         REM Character from ASCII code
-ASC(s$)         REM ASCII code of first character
-INSTR(s1$, s2$) REM Find s2$ in s1$ (returns position)
-SPACE$(n)       REM String of n spaces
-STRING$(n, c$)  REM String of n copies of c$
+' Check if at end of file
+IF EOF(1) THEN PRINT "End of file reached"
+
+' Get file position
+Position = LOC(1)
+
+' Get file size
+Size = LOF(1)
 ```
-
-**String examples:**
-```basic
-Name$ = "  John Doe  "
-PRINT LEN(Name$)        REM 12
-PRINT TRIM$(Name$)      REM "John Doe"
-PRINT UCASE$(Name$)     REM "  JOHN DOE  "
-
-S$ = "Hello, World!"
-PRINT LEFT$(S$, 5)      REM "Hello"
-PRINT RIGHT$(S$, 6)     REM "World!"
-PRINT MID$(S$, 8, 5)    REM "World"
-
-X = 42
-PRINT "X = " + STR$(X)  REM "X = 42"
-Y = VAL("3.14")         REM 3.14
-```
-
-### Type Conversion
-
-```basic
-CINT(x)         REM Convert to integer
-CSNG(x)         REM Convert to single precision
-CDBL(x)         REM Convert to double precision
-```
-
-### Keyboard Input
-
-```basic
-INKEY$          REM Read key without waiting (returns "" if no key)
-```
-
-**Example:**
-```basic
-PRINT "Press any key to continue..."
-DO
-    K$ = INKEY$
-LOOP UNTIL K$ <> ""
-PRINT "You pressed: "; K$
-```
-
-### Time Functions
-
-```basic
-TIMER           REM Seconds since midnight (or system start)
-TIME$           REM Current time as string "HH:MM:SS"
-DATE$           REM Current date as string "MM-DD-YYYY"
-```
-
-### Utility Functions
-
-```basic
-IIF(condition, true_val, false_val)  REM Immediate IF (inline conditional)
-```
-
-**Example:**
-```basic
-Age = 20
-Status$ = IIF(Age >= 18, "Adult", "Minor")
-PRINT Status$  REM "Adult"
-```
-
 
 ---
 
-## Compiler Directives
+## String Functions
 
-### OPTION BASE
-
-Set the default lower bound for arrays:
+### String Manipulation
 
 ```basic
-OPTION BASE 0  REM Arrays start at 0 (C-style)
-OPTION BASE 1  REM Arrays start at 1 (traditional BASIC, default)
+' Length of string
+Len = LEN("Hello")  ' Returns 5
+
+' Extract substring
+S$ = "Hello World"
+Left$ = LEFT$(S$, 5)      ' "Hello"
+Right$ = RIGHT$(S$, 5)    ' "World"
+Mid$ = MID$(S$, 7, 5)     ' "World"
+
+' Find substring position
+Pos = INSTR("Hello World", "World")  ' Returns 7
+
+' String comparison
+IF STRCMP(A$, B$) = 0 THEN PRINT "Equal"
+
+' Convert case
+Upper$ = UCASE$("hello")  ' "HELLO"
+Lower$ = LCASE$("HELLO")  ' "hello"
+
+' Trim whitespace
+Trimmed$ = LTRIM$(S$)     ' Left trim
+Trimmed$ = RTRIM$(S$)     ' Right trim
+Trimmed$ = TRIM$(S$)      ' Both ends
 ```
 
-### OPTION EXPLICIT
-
-Require all variables to be declared:
+### String Conversion
 
 ```basic
-OPTION EXPLICIT
+' Number to string
+S$ = STR$(123)      ' " 123" (with leading space)
+S$ = STR$(45.67)
 
-DIM X AS INTEGER  REM Must declare before use
-X = 10            REM OK
-Y = 20            REM Error: Y not declared
+' String to number
+X = VAL("123")      ' Returns 123
+Y = VAL("45.67")    ' Returns 45.67
+
+' Character/ASCII conversion
+C$ = CHR$(65)       ' "A"
+Code = ASC("A")     ' 65
 ```
 
-### OPTION BITWISE / OPTION LOGICAL
-
-Control behavior of logical operators:
+### String Building
 
 ```basic
-OPTION BITWISE
-X = 5 AND 3     REM Bitwise AND: 101 AND 011 = 001 = 1
-Y = 12 OR 10    REM Bitwise OR: 1100 OR 1010 = 1110 = 14
+' Concatenation
+FullName$ = FirstName$ + " " + LastName$
 
-OPTION LOGICAL
-X = 5 AND 3     REM Logical AND: TRUE AND TRUE = TRUE (-1)
-Y = 0 OR 5      REM Logical OR: FALSE OR TRUE = TRUE (-1)
+' Repeat character
+Stars$ = STRING$(10, "*")    ' "**********"
+Spaces$ = SPACE$(5)          ' "     "
+
+' Format string
+S$ = HEX$(255)               ' "FF"
+S$ = OCT$(8)                 ' "10"
+S$ = BIN$(5)                 ' "101"
 ```
 
-### OPTION UNICODE
-
-Enable Unicode string support:
+### Unicode Strings
 
 ```basic
 OPTION UNICODE
 
-Name$ = "José"
-City$ = "São Paulo"
-Text$ = "Hello 世界"
-PRINT Name$; " lives in "; City$
-```
+' Unicode string length (character count, not bytes)
+Len = LEN("Hello 世界")  ' Returns 8
 
-**Unicode string functions:**
-```basic
-OPTION UNICODE
-
+' Unicode substring operations
 S$ = "Hello 世界"
-PRINT ULEN(S$)      REM Unicode length (7)
-PRINT LEN(S$)       REM Byte length (may differ)
-PRINT UCODE(S$)     REM Unicode code point of first char
-PRINT UCHR$(20320)  REM Unicode character from code point
+Left$ = LEFT$(S$, 5)     ' "Hello"
+Right$ = RIGHT$(S$, 2)   ' "世界"
+
+' Unicode character at position
+C$ = MID$(S$, 7, 1)      ' "世"
 ```
 
-### OPTION ERROR
+---
 
-Enable line number tracking for better error messages:
+## Mathematical Functions
+
+### Basic Math Functions
 
 ```basic
-OPTION ERROR
+' Absolute value
+X = ABS(-5)         ' Returns 5
 
-100 X = 10
-110 Y = 0
-120 Z = X / Y  REM Error will report line 120
+' Sign
+S = SGN(-10)        ' Returns -1 (or 0, 1)
+
+' Square root
+R = SQR(16)         ' Returns 4
+
+' Power
+P = POW(2, 8)       ' Returns 256
+
+' Integer operations
+I = INT(3.7)        ' Returns 3 (floor)
+I = FIX(3.7)        ' Returns 3 (truncate)
+I = CINT(3.7)       ' Returns 4 (round)
 ```
 
-### OPTION CANCELLABLE
-
-Enable cancellable operations (like WAIT_MS):
+### Trigonometric Functions
 
 ```basic
+' Basic trig (angles in radians)
+S = SIN(X)
+C = COS(X)
+T = TAN(X)
+
+' Inverse trig
+A = ATN(X)          ' Arctangent
+A = ASIN(X)         ' Arcsine
+A = ACOS(X)         ' Arccosine
+
+' Two-argument arctangent
+Angle = ATN2(Y, X)
+
+' Hyperbolic functions
+SH = SINH(X)
+CH = COSH(X)
+TH = TANH(X)
+```
+
+### Logarithmic and Exponential
+
+```basic
+' Natural logarithm
+L = LOG(X)          ' ln(x)
+
+' Base-10 logarithm
+L = LOG10(X)
+
+' Exponential
+E = EXP(X)          ' e^x
+```
+
+### Random Numbers
+
+```basic
+' Initialize random seed
+RANDOMIZE TIMER
+
+' Random number 0 to <1
+R = RND(1)
+
+' Random integer in range [Min, Max]
+Dice = INT(RND(1) * 6) + 1          ' 1-6
+Number = INT(RND(1) * 100) + 1      ' 1-100
+```
+
+### Special Math
+
+```basic
+' Minimum/maximum
+Min = MIN(A, B, C)
+Max = MAX(A, B, C)
+
+' Clamp value to range
+Clamped = CLAMP(Value, MinVal, MaxVal)
+
+' Linear interpolation
+Interpolated = LERP(Start, End, T)
+
+' Degrees/radians conversion
+Rads = RAD(180)     ' π
+Degs = DEG(PI)      ' 180
+```
+
+---
+
+## Timer and Events
+
+### Timer Functions
+
+```basic
+' Get current time in seconds
+T = TIMER
+
+' Get time in milliseconds
+Ms = TIMEMS
+
+' Get frame count
+Frame = FRAME
+```
+
+### One-Shot Timers
+
+```basic
+' Execute after delay
+AFTER 5 SECS GOTO HandleTimeout
+AFTER 1000 MS GOSUB ProcessData
+AFTER 60 FRAMES CALL UpdateScreen
+
+' Inline handler (single statement)
+AFTER 2 SECS X = X + 1 DONE
+
+' Multi-line handler
+AFTER 3 SECS
+    PRINT "Three seconds elapsed"
+    Counter = Counter + 1
+DONE
+```
+
+### Repeating Timers
+
+```basic
+' Repeat every interval
+EVERY 1 SECS GOTO GameLoop
+EVERY 500 MS GOSUB UpdateDisplay
+EVERY 1 FRAMES CALL RenderFrame
+
+' Inline repeating handler
+EVERY 2 SECS Score = Score + 10 DONE
+
+' Multi-line repeating handler
+EVERY 1 SECS
+    PRINT "Tick: "; TIMER
+    Updates = Updates + 1
+DONE
+```
+
+### Frame-Based Timers
+
+```basic
+' One-shot frame timer
+AFTERFRAMES 60 GOTO NextLevel
+
+' Repeating frame timer
+EVERYFRAME CALL GameUpdate
+```
+
+### Timer Control
+
+```basic
+' Stop a specific timer
+TIMER STOP TimerID
+
+' Stop all timers
+TIMER STOP
+
+' Cancellable operations
 OPTION CANCELLABLE
 
-REM WAIT_MS can be interrupted by timer events
-WAIT_MS 5000  REM Wait 5 seconds (can be cancelled)
+WAIT_MS 5000  ' Wait 5 seconds (can be cancelled by timers/events)
 
-OPTION CANCELLABLE OFF
-WAIT_MS 5000  REM Wait 5 seconds (cannot be cancelled)
+' Main event loop
+RUN  ' Run until program ends
 ```
 
-### OPTION FORCE_YIELD
-
-Enable quasi-preemptive multitasking for timer handlers:
+### Event Handlers
 
 ```basic
-OPTION FORCE_YIELD
+' Register event handler
+ONEVENT "collision" GOSUB HandleCollision
+ONEVENT "keypress" GOTO ProcessKey
+ONEVENT "timeout" CALL OnTimeout
 
-REM Timer handlers will force yield points
-EVERY 100 MS GOSUB 1000
-```
-
-### INCLUDE
-
-Include another BASIC file:
-
-```basic
-INCLUDE "library.bas"
-INCLUDE "constants.bas"
-
-OPTION ONCE
-INCLUDE "header.bas"  REM Will only be included once even if called multiple times
-```
-
----
-
-## Data Statements
-
-### DATA/READ/RESTORE
-
-Store and read constant data:
-
-```basic
-REM Define data
-DATA 10, 20, 30, 40, 50
-DATA "Apple", "Banana", "Cherry"
-
-REM Read data
-READ A, B, C
-PRINT A, B, C  REM 10, 20, 30
-
-READ Fruit1$, Fruit2$
-PRINT Fruit1$, Fruit2$  REM "Apple", "Banana"
-
-REM Reset data pointer
-RESTORE
-READ X
-PRINT X  REM 10 (reads from beginning again)
-```
-
-**RESTORE with line numbers:**
-```basic
-100 DATA 1, 2, 3
-200 DATA 4, 5, 6
-
-RESTORE 200
-READ A, B
-PRINT A, B  REM 4, 5
-```
-
----
-
-## Event System and Timers
-
-FasterBASIC provides an event-driven programming model with timer support.
-
-### AFTER - One-shot Timer
-
-Execute code after a delay:
-
-```basic
-REM After 1000 milliseconds, jump to line 1000
-AFTER 1000 MS GOTO 1000
-
-REM After 2 seconds
-AFTER 2 SECS GOSUB 2000
-
-REM Call a subroutine
-AFTER 500 MS CALL HandleDelay
-
-REM Inline handler (modern style)
-AFTER 1000 MS
-    PRINT "One second elapsed!"
-DONE
-```
-
-### EVERY - Repeating Timer
-
-Execute code repeatedly:
-
-```basic
-REM Every 100 milliseconds
-EVERY 100 MS GOTO 1000
-
-REM Every 1 second
-EVERY 1 SECS GOSUB 5000
-
-REM Inline handler
-EVERY 500 MS
-    Counter = Counter + 1
-    PRINT "Tick: "; Counter
-DONE
-```
-
-### AFTERFRAMES / EVERYFRAME
-
-Frame-based timers (useful for game loops):
-
-```basic
-REM After 60 frames
-AFTERFRAMES 60 GOSUB 1000
-
-REM Every frame (game loop)
-EVERYFRAME
-    UpdateGame()
-    DrawScreen()
-DONE
-```
-
-### TIMER STOP
-
-Stop a specific timer:
-
-```basic
-REM Store timer ID
-TimerID = AFTER 1000 MS GOTO 1000
-
-REM Later, stop the timer
-TIMER STOP TimerID
-```
-
-### ONEVENT
-
-Trigger code on named events:
-
-```basic
-REM Define event handler
-ONEVENT "collision" GOSUB 5000
-
-REM Later, trigger the event (from code or plugin)
-REM Note: Event triggering typically happens internally
-```
-
-### RUN - Main Event Loop
-
-Start the event loop (required for timers):
-
-```basic
-REM Set up timers
-EVERY 1 SECS GOSUB UpdateDisplay
-
-REM Start event loop (program continues until quit)
+' Main event loop
 RUN
 
-REM This code runs after event loop exits
-PRINT "Program ended"
-END
-
-SUB UpdateDisplay
-    CLS
-    PRINT "Time: "; TIMER
-END SUB
+HandleCollision:
+    PRINT "Collision detected!"
+    RETURN
 ```
 
-### WAIT and WAIT_MS
+---
+
+## Graphics Commands
+
+### Video Modes
 
 ```basic
-REM Wait (traditional, blocks execution)
-WAIT 1000  REM Wait 1000 milliseconds
+' Set video mode
+VMODE 2         ' XRES mode (320x240)
+VMODE 6         ' High resolution mode
+```
 
-REM WAIT_MS (can be cancelled with OPTION CANCELLABLE)
-OPTION CANCELLABLE
-WAIT_MS 5000  REM Wait 5 seconds, can be interrupted by events
+### Drawing Primitives
+
+```basic
+' Plot pixel
+PSET X, Y, Color
+
+' Draw line
+LINE X1, Y1, X2, Y2, Color
+
+' Draw rectangle
+RECT X, Y, Width, Height, Color
+
+' Draw filled rectangle
+RECTF X, Y, Width, Height, Color
+
+' Draw circle
+CIRCLE X, Y, Radius, Color
+
+' Draw filled circle
+CIRCLEF X, Y, Radius, Color
+
+' Horizontal line (fast)
+HLINE X, Y, Length, Color
+
+' Vertical line (fast)
+VLINE X, Y, Length, Color
+```
+
+### Graphics Control
+
+```basic
+' Clear graphics
+CLG
+GCLS  ' Backwards compatible
+
+' Set drawing color
+COLOR ForeColor, BackColor
+```
+
+### Sprite System
+
+```basic
+' Load sprite
+SPRLOAD 1, "player.png"
+SPRLOAD 2, "enemy.png"
+
+' Show/hide sprite
+SPRSHOW 1
+SPRHIDE 2
+
+' Position sprite
+SPRMOVE 1, X, Y
+
+' Advanced positioning with transform
+SPRPOS 1, X, Y, ScaleX, ScaleY, Rotation, AnchorX, AnchorY
+
+' Tint sprite
+SPRTINT 1, Red, Green, Blue, Alpha
+
+' Scale sprite
+SPRSCALE 1, ScaleX, ScaleY
+
+' Rotate sprite
+SPRROT 1, Angle
+
+' Animated sprite effect
+SPREXPLODE 1, Duration
+
+' Free sprite resources
+SPRFREE 1
+```
+
+### Collision Detection
+
+```basic
+' Enable collision system
+VCOLLISION_ENABLE
+
+' Enable specific detection
+VCOLLISION_ENABLE_SPRITE_DETECTION 1
+VCOLLISION_ENABLE_REGION_DETECTION 1
+
+' Add collision region
+RegionID = VCOLLISION_REGION_ADD(X, Y, Width, Height, Active, UserData)
+
+' Check sprite-sprite collision
+IF VCOLLISION_SPRITE(Sprite1, Sprite2) THEN
+    PRINT "Sprites collided!"
+END IF
+
+' Handle region events
+ONEVENT "region_enter" GOSUB OnRegionEnter
+ONEVENT "region_exit" GOSUB OnRegionExit
+```
+
+### Palette Operations
+
+```basic
+' Set palette color
+PALETTE Index, Red, Green, Blue
+
+' Global palette for XRES mode
+XRES_PALETTE_GLOBAL Index, R, G, B
+```
+
+### Procedural Patterns
+
+```basic
+' Generate procedural pattern
+XRES_GENERATE_PATTERN Layer, X, Y, Width, Height, PatternParams
+
+' Flood fill
+XRES_FLOOD_FILL Layer, X, Y, Color
+WRES_FLOOD_FILL Layer, X, Y, Color
+```
+
+---
+
+## Compiler Options
+
+### Setting Options
+
+Options control compiler behavior and must appear before code that uses the feature.
+
+```basic
+' Array base index (0 or 1)
+OPTION BASE 0      ' Arrays start at 0
+OPTION BASE 1      ' Arrays start at 1 (default)
+
+' Logical vs. Bitwise operators
+OPTION LOGICAL     ' AND/OR/NOT are logical operators
+OPTION BITWISE     ' AND/OR/NOT are bitwise operators (default)
+
+' Explicit variable declaration
+OPTION EXPLICIT    ' All variables must be declared with DIM
+
+' Unicode string support
+OPTION UNICODE     ' Enable UTF-8 string handling
+
+' Error line tracking
+OPTION ERROR       ' Track line numbers for error reporting
+
+' File inclusion
+OPTION ONCE        ' Include file only once (for headers)
+
+' Loop cancellation
+OPTION CANCELLABLE ' Allow timer events to cancel WAIT/loops
+OPTION CANCELLABLE OFF ' Disable cancellation
+
+' Quasi-preemptive handlers
+OPTION FORCE_YIELD ' Force yield points in tight loops
+```
+
+### Include Files
+
+```basic
+' Include external file
+INCLUDE "library.bas"
+
+' Include with once guard
+OPTION ONCE
+INCLUDE "header.bas"
 ```
 
 ---
 
 ## Plugin System
 
-FasterBASIC supports extensible plugins that add new commands and functions.
+### Registry Commands
 
-### Available Plugins
+FasterBASIC supports extensible commands through a plugin registry:
 
-#### CSV Plugin
 ```basic
-REM CSV file operations
-Handle = CSV_OPEN("data.csv", "r")
-CSV_READ Handle, Row$()
-CSV_CLOSE Handle
-```
+' Commands are registered by plugins
+' Example plugin commands:
 
-#### DateTime Plugin
-```basic
-REM Date/time operations
-NOW$ = DATETIME_NOW()
-Stamp = DATETIME_TIMESTAMP()
-PRINT DATETIME_FORMAT(Stamp, "YYYY-MM-DD HH:MM:SS")
-```
+' CSV Plugin
+CSV_OPEN "data.csv"
+CSV_READ Row$
+CSV_CLOSE
 
-#### Environment Plugin
-```basic
-REM Environment variables
-Home$ = ENV_GET("HOME")
+' DateTime Plugin
+DateStr$ = DATE$()
+TimeStr$ = TIME$()
+Timestamp = UNIXTIME()
+
+' JSON Plugin
+JSON_PARSE Text$, Object
+Value$ = JSON_GET(Object, "key")
+
+' Math Plugin (extended functions)
+Result = ATAN2(Y, X)
+Result = HYPOT(A, B)
+
+' Environment Plugin
+Path$ = ENV$("PATH")
 ENV_SET "MY_VAR", "value"
-```
 
-#### FileOps Plugin
-```basic
-REM File system operations
-FILEOPS_COPY "source.txt", "dest.txt"
-FILEOPS_DELETE "temp.txt"
-FILEOPS_MKDIR "newfolder"
-Exists = FILEOPS_EXISTS("file.txt")
-```
+' File Operations Plugin
+SIZE = FILESIZE("data.bin")
+EXISTS = FILEEXISTS("config.txt")
+FILECOPY "src.txt", "dest.txt"
+FILEMOVE "old.txt", "new.txt"
 
-#### INI Plugin
-```basic
-REM INI file operations
-INI_LOAD "config.ini"
+' INI File Plugin
+INI_OPEN "config.ini"
 Value$ = INI_GET("Section", "Key")
-INI_SET "Section", "Key", "NewValue"
-INI_SAVE "config.ini"
-```
+INI_SET "Section", "Key", "Value"
+INI_CLOSE
 
-#### JSON Plugin
-```basic
-REM JSON operations
-JSON_LOAD "data.json"
-Name$ = JSON_GET("user.name")
-Age = JSON_GET_NUM("user.age")
-JSON_SET "user.name", "John"
-JSON_SAVE "data.json"
-```
-
-#### Math Plugin
-```basic
-REM Extended math functions
-Result = MATH_CEIL(3.2)    REM 4
-Result = MATH_FLOOR(3.8)   REM 3
-Result = MATH_ROUND(3.5)   REM 4
-Result = MATH_POW(2, 8)    REM 256
-Result = MATH_MIN(5, 3)    REM 3
-Result = MATH_MAX(5, 3)    REM 5
-```
-
-#### Records Plugin
-```basic
-REM Record-based file I/O
-Handle = RECOPEN("data.dat", "Person")
-RECWRITE Handle, PersonRecord
-RECREAD Handle, PersonRecord
+' Records Plugin (structured data storage)
+Handle = RECOPEN("data.dat", "TypeName")
+RECWRITE Handle, RecordVar
+RECREAD Handle, RecordVar
 RECCLOSE Handle
+
+' Template Engine Plugin
+TPL_LOAD "template.html"
+TPL_SET "name", Value$
+Result$ = TPL_RENDER()
 ```
 
-#### Template Plugin
-```basic
-REM Template engine
-TEMPLATE_LOAD "template.txt"
-TEMPLATE_SET "name", "John"
-TEMPLATE_SET "age", "30"
-Result$ = TEMPLATE_RENDER()
-```
+### Plugin Registration
 
-### Registry-based Commands
+Plugins are loaded automatically from the `plugins/` directory. They can register:
 
-Plugins register commands and functions that can be called like built-in keywords:
-
-```basic
-REM These are dynamically registered by plugins
-PLUGIN_COMMAND arg1, arg2
-Result = PLUGIN_FUNCTION(x, y)
-```
+- Commands (statements)
+- Functions (expressions)
+- Event handlers
+- Custom data types
 
 ---
 
-## Advanced Features
+## Built-in Functions Reference
 
-### Command-Line Arguments
-
-Access command-line arguments in compiled programs:
+### Numeric Functions
 
 ```basic
-REM Get argument count
-ArgCount = ARGC()
-
-REM Get specific argument
-FOR I = 0 TO ArgCount - 1
-    Arg$ = ARGV(I)
-    PRINT "Arg "; I; ": "; Arg$
-NEXT I
-```
-
-### Error Handling
-
-```basic
-REM Check for errors (implementation-specific)
-ON ERROR GOTO ErrorHandler
-
-REM Your code here
-OPEN "file.txt" FOR INPUT AS #1
-
-REM Normal exit
-END
-
-ErrorHandler:
-    PRINT "An error occurred!"
-    END
-```
-
-### Program Control
-
-```basic
-END         REM End program
-STOP        REM Stop program (same as END)
-SYSTEM      REM Exit to operating system
-```
-
----
-
-## Code Examples
-
-### Example 1: Simple Calculator
-
-```basic
-REM Simple Calculator
-PRINT "Simple Calculator"
-PRINT "================="
-
-INPUT "Enter first number"; A
-INPUT "Enter operator (+, -, *, /)"; Op$
-INPUT "Enter second number"; B
-
-SELECT CASE Op$
-    CASE "+"
-        Result = A + B
-    CASE "-"
-        Result = A - B
-    CASE "*"
-        Result = A * B
-    CASE "/"
-        IF B = 0 THEN
-            PRINT "Error: Division by zero!"
-            END
-        ENDIF
-        Result = A / B
-    OTHERWISE
-        PRINT "Invalid operator!"
-        END
-ENDCASE
-
-PRINT A; " "; Op$; " "; B; " = "; Result
-```
-
-### Example 2: Number Guessing Game
-
-```basic
-REM Number Guessing Game
-CLS
-PRINT "=== Number Guessing Game ==="
-PRINT
-
-REM Generate random number 1-100
-Target = INT(RND(1) * 100) + 1
-Guesses = 0
-
-DO
-    INPUT "Guess a number (1-100)"; Guess
-    Guesses = Guesses + 1
-    
-    IF Guess < Target THEN
-        PRINT "Too low!"
-    ELSEIF Guess > Target THEN
-        PRINT "Too high!"
-    ELSE
-        PRINT "Correct! You got it in "; Guesses; " guesses!"
-        EXIT DO
-    ENDIF
-LOOP
-
-PRINT "The number was "; Target
-```
-
-### Example 3: File Processing
-
-```basic
-REM Process a text file line by line
-OPEN "input.txt" FOR INPUT AS #1
-OPEN "output.txt" FOR OUTPUT AS #2
-
-LineCount = 0
-WHILE NOT EOF(1)
-    LINE INPUT #1, Line$
-    LineCount = LineCount + 1
-    
-    REM Process line (convert to uppercase)
-    Line$ = UCASE$(Line$)
-    
-    REM Write to output
-    PRINT #2, Line$
-WEND
-
-CLOSE #1
-CLOSE #2
-
-PRINT "Processed "; LineCount; " lines"
-```
-
-### Example 4: User-Defined Types
-
-```basic
-REM Student grade tracker
-TYPE Student
-    Name AS STRING
-    ID AS INTEGER
-    Grade1 AS DOUBLE
-    Grade2 AS DOUBLE
-    Grade3 AS DOUBLE
-END TYPE
-
-REM Create array of students
-DIM Students(5) AS Student
-
-REM Input student data
-FOR I = 1 TO 3
-    PRINT "Student "; I
-    INPUT "  Name"; Students(I).Name
-    INPUT "  ID"; Students(I).ID
-    INPUT "  Grade 1"; Students(I).Grade1
-    INPUT "  Grade 2"; Students(I).Grade2
-    INPUT "  Grade 3"; Students(I).Grade3
-    PRINT
-NEXT I
-
-REM Calculate and display averages
-PRINT "=== Grade Report ==="
-FOR I = 1 TO 3
-    Average = (Students(I).Grade1 + Students(I).Grade2 + Students(I).Grade3) / 3
-    PRINT Students(I).Name; " ("; Students(I).ID; "): "; 
-    PRINT "Average = "; INT(Average * 10) / 10
-NEXT I
-```
-
-### Example 5: Timer-based Counter
-
-```basic
-REM Timer-based event counter
-Counter = 0
-Running = 1
-
-REM Set up repeating timer (every 1 second)
-EVERY 1 SECS
-    Counter = Counter + 1
-    CLS
-    PRINT "Counter: "; Counter
-    PRINT "Press Q to quit"
-DONE
-
-REM Main loop checking for quit
-DO
-    K$ = INKEY$
-    IF UCASE$(K$) = "Q" THEN
-        Running = 0
-    ENDIF
-    WAIT_MS 50
-LOOP UNTIL Running = 0
-
-PRINT "Final count: "; Counter
-```
-
----
-
-## Appendix A: Reserved Keywords
-
-```
-ABS, AFTER, AFTERFRAMES, AND, AS, ASC, AT, ATN
-BASE, BITWISE, BYREF, BYVAL
-CALL, CANCELLABLE, CASE, CDBL, CHR$, CINT, CIRCLE, CIRCLEF,
-CLG, CLS, COLOR, CONSTANT, COS, CSNG
-DATA, DATE$, DEC, DEF, DIM, DO, DONE, DOUBLE
-ELSE, ELSEIF, END, ENDCASE, ENDFUNCTION, ENDIF, ENDSUB, ENDTYPE,
-EQV, ERASE, EVERY, EVERYFRAME, EXIT, EXP, EXPLICIT
-FIX, FN, FOR, FORCE_YIELD, FUNCTION
-GCLS, GOSUB, GOTO, GREATER_EQUAL, GREATER_THAN
-HLINE
-IF, IIF, IMP, IN, INC, INCLUDE, INKEY$, INPUT, INSTR, INT, INTEGER
-KEY, KEYWORD_DOUBLE, KEYWORD_INTEGER, KEYWORD_LONG, KEYWORD_SINGLE, KEYWORD_STRING
-LBOUND, LCASE$, LEFT$, LEN, LET, LINE, LINE_INPUT, LOCAL, LOCATE,
-LOG, LOGICAL, LONG, LOOP
-MID$, MOD, MS
-NEXT, NOT
-OFF, ON, ONCE, ONEVENT, OPEN, OPTION, OR, OTHERWISE
-PLAY, PLAY_SOUND, PRESERVE, PRINT, PRINT_AT, PSET
-READ, RECT, REDIM, REM, REPEAT, RESTORE, RETURN, RIGHT$, RND,
-RTRIM$, RUN
-SECS, SELECT, SGN, SHARED, SIN, SINGLE, SPACE$, SPREXPLODE, SPRFREE,
-SPRHIDE, SPRLOAD, SPRMOVE, SPRPOS, SPRROT, SPRSCALE, SPRSHOW, SPRTINT,
-SQR, STEP, STOP, STR$, STRING, STRING$, SUB, SWAP, SYSTEM
-TAN, TCHAR, TCLEAR, TEXTPUT, TGRID, THEN, TIME$, TIMER, TO, TRIM$,
-TSCROLL, TYPE
-UBOUND, UCASE$, UNICODE, UNTIL, USING
-VAL, VLINE, VSYNC
-WAIT, WAIT_MS, WEND, WHEN, WHILE, WRITE
-XOR
-```
-
----
-
-## Appendix B: Operator Precedence Table
-
-| Priority | Operators | Associativity |
-|----------|-----------|---------------|
-| 1 (highest) | () | Left to right |
-| 2 | ^ | Right to left |
-| 3 | - (unary) | Right to left |
-| 4 | *, /, \ | Left to right |
-| 5 | MOD | Left to right |
-| 6 | +, - | Left to right |
-| 7 | =, <>, <, <=, >, >= | Left to right |
-| 8 | NOT | Right to left |
-| 9 | AND | Left to right |
-| 10 | OR, XOR | Left to right |
-| 11 (lowest) | EQV, IMP | Left to right |
-
----
-
-## Appendix C: Type Suffix Reference
-
-| Suffix | Type | Example |
-|--------|------|---------|
-| % | INTEGER | Count% = 10 |
-| ! | SINGLE | Value! = 3.14 |
-| # | DOUBLE | Pi# = 3.14159265 |
-| $ | STRING | Name$ = "John" |
-| (none) | Default (DOUBLE) | X = 10.5 |
-
----
-
-## Appendix D: Color Codes
-
-Standard 16-color palette (for COLOR command):
-
-| Code | Color | Code | Color |
-|------|-------|------|-------|
-| 0 | Black | 8 | Dark Gray |
-| 1 | Blue | 9 | Light Blue |
-| 2 | Green | 10 | Light Green |
-| 3 | Cyan | 11 | Light Cyan |
-| 4 | Red | 12 | Light Red |
-| 5 | Magenta | 13 | Light Magenta |
-| 6 | Brown | 14 | Yellow |
-| 7 | Light Gray | 15 | White |
-
----
-
-## Appendix E: Common Idioms
-
-### Read all lines from file
-```basic
-OPEN "file.txt" FOR INPUT AS #1
-WHILE NOT EOF(1)
-    LINE INPUT #1, Line$
-    REM Process Line$
-WEND
-CLOSE #1
-```
-
-### Wait for keypress
-```basic
-DO
-    K$ = INKEY$
-LOOP UNTIL K$ <> ""
-```
-
-### Generate random integer in range
-```basic
-REM Random integer from Min to Max (inclusive)
-Value = INT(RND(1) * (Max - Min + 1)) + Min
-```
-
-### Bubble sort array
-```basic
-FOR I = 1 TO N - 1
-    FOR J = 1 TO N - I
-        IF A(J) > A(J + 1) THEN
-            SWAP A(J), A(J + 1)
-        ENDIF
-    NEXT J
-NEXT I
-```
-
-### Clear input buffer
-```basic
-DO
-    K$ = INKEY$
-LOOP UNTIL K$ = ""
-```
-
----
-
-## Version History
-
-**Version 1.0.0** (January 2025)
-- Initial release
-- Terminal-based BASIC with LuaJIT backend
-- User-defined types
-- Timer and event system
-- Plugin architecture
-- Unicode support
-
----
-
-## License
-
-Copyright © 2024-2025 FasterBASIC Project
-
----
-
-*For more information, examples, and updates, visit:*  
-*https://github.com/albanread/fsh*
-
+ABS(x)              ' Absolute value
+SGN(x)              ' Sign: -1, 0, or 1
+INT(x)              ' Integer part (floor)
+FIX(x)              ' Truncate towards zero
+CINT(x)             ' Round to nearest integer
+SQR(x)              ' Square root
+POW(x, y)           ' x raised to power y
+EXP(x)              ' e raise
