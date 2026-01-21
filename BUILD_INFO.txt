@@ -1,0 +1,16 @@
+FasterBASIC Build Essentials
+Extracted: Wed Jan 21 19:03:40 GMT 2026
+From: /Users/oberon/FasterBasicGreen
+
+This archive contains only the files necessary to build fbsh and fbc.
+
+Files included:
+- Source code (C++)
+- Build scripts
+- Runtime Lua libraries
+- Example BASIC programs
+- Documentation
+
+To verify completeness, run a test build:
+  cd FasterBASIC-BuildOnly
+  ./rebuild_fbsh_linux.sh  # or ./rebuild_fbsh.sh on macOS
