@@ -1,5 +1,13 @@
 # FasterBASIC - Build Essentials
 
+FasterBASIC is a very conventional BASIC designed to be extremely familiar to BASIC programmers
+
+This is a compiler written in C, with a supporting runtime written in C, the final stage of code generation
+transpiles to Lua; LuaJIT runs that code, it is LuaJIT that makes the resulting BASIC programs fast.
+
+This works in a MacOS and (less tested) Linux terminal.
+
+
 This is a minimal distribution containing only the source code needed to build
 the FasterBASIC compiler (fbc) and interactive shell (fbsh).
 
