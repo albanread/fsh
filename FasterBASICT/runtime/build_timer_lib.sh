@@ -20,8 +20,20 @@ if [ -d "/opt/homebrew/opt/luajit" ]; then
 elif [ -d "/usr/local/opt/luajit" ]; then
     LUAJIT_INCLUDE="/usr/local/opt/luajit/include/luajit-2.1"
     LUAJIT_LIB="/usr/local/opt/luajit/lib"
+elif [ -d "/usr/include/luajit-2.1" ]; then
+    LUAJIT_INCLUDE="/usr/include/luajit-2.1"
+    LUAJIT_LIB="/usr/lib"
+elif [ -d "/usr/local/include/luajit-2.1" ]; then
+    LUAJIT_INCLUDE="/usr/local/include/luajit-2.1"
+    LUAJIT_LIB="/usr/local/lib"
+elif [ -d "/usr/include/luajit-2.0" ]; then
+    LUAJIT_INCLUDE="/usr/include/luajit-2.0"
+    LUAJIT_LIB="/usr/lib"
 else
-    echo "Error: LuaJIT not found. Install with: brew install luajit"
+    echo "Error: LuaJIT not found."
+    echo "Install with: brew install luajit                         (macOS)"
+    echo "           or: sudo apt-get install libluajit-5.1-dev    (Debian/Ubuntu)"
+    echo "           or: sudo yum install luajit-devel             (RedHat/CentOS)"
     exit 1
 fi
 
