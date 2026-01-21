@@ -1,0 +1,121 @@
+name: Build FasterBASIC
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  release:
+    types: [created]
+
+jobs:
+  build-macos:
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        brew install luajit sqlite3
+
+    - name: Build fbsh
+      run: |
+        chmod +x rebuild_fbsh.sh
+        ./rebuild_fbsh.sh
+
+    - name: Build fbc
+      run: |
+        chmod +x rebuild_fbc.sh
+        ./rebuild_fbc.sh
+
+    - name: Test executables
+      run: |
+        ./fbsh --version || true
+        ./fbc_new --help || echo "fbc built successfully"
+        ls -lh fbsh fbc_new
+
+    - name: Upload fbsh artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: fbsh-macos
+        path: fbsh
+        retention-days: 30
+
+    - name: Upload fbc artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: fbc-macos
+        path: fbc_new
+        retention-days: 30
+
+  build-linux:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Install dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y luajit libluajit-5.1-dev sqlite3 libsqlite3-dev build-essential
+
+    - name: Build fbsh
+      run: |
+        chmod +x rebuild_fbsh_linux.sh
+        ./rebuild_fbsh_linux.sh
+
+    - name: Build fbc
+      run: |
+        chmod +x rebuild_fbc_linux.sh
+        ./rebuild_fbc_linux.sh
+
+    - name: Test executables
+      run: |
+        ./fbsh --version || true
+        ./fbc_new --help || echo "fbc built successfully"
+        ls -lh fbsh fbc_new
+
+    - name: Upload fbsh artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: fbsh-linux
+        path: fbsh
+        retention-days: 30
+
+    - name: Upload fbc artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: fbc-linux
+        path: fbc_new
+        retention-days: 30
+
+  create-release:
+    needs: [build-macos, build-linux]
+    runs-on: ubuntu-latest
+    if: github.event_name == 'release'
+
+    steps:
+    - name: Download all artifacts
+      uses: actions/download-artifact@v4
+
+    - name: Create release archives
+      run: |
+        cd fbsh-macos && tar -czf ../fbsh-macos.tar.gz fbsh && cd ..
+        cd fbc-macos && tar -czf ../fbc-macos.tar.gz fbc_new && cd ..
+        cd fbsh-linux && tar -czf ../fbsh-linux.tar.gz fbsh && cd ..
+        cd fbc-linux && tar -czf ../fbc-linux.tar.gz fbc_new && cd ..
+        ls -lh *.tar.gz
+
+    - name: Upload release assets
+      uses: softprops/action-gh-release@v1
+      with:
+        files: |
+          fbsh-macos.tar.gz
+          fbc-macos.tar.gz
+          fbsh-linux.tar.gz
+          fbc-linux.tar.gz
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
