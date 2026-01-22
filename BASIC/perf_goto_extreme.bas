@@ -1,0 +1,220 @@
+REM Extreme GOTO Performance Test
+REM This benchmark is designed to stress the linear scanning
+REM behavior of GOTO statement by having many lines and
+REM GOTOs that jump to lines far from the current position
+
+10 PRINT "Extreme GOTO Performance Test"
+20 PRINT "================================"
+30 PRINT "Testing GOTO with large line number gaps"
+40 PRINT ""
+
+REM Initialize counter
+50 COUNT = 0
+60 GOTO 10000
+
+REM Padding lines to increase program size
+100 REM Padding line 100
+200 REM Padding line 200
+300 REM Padding line 300
+400 REM Padding line 400
+500 REM Padding line 500
+600 REM Padding line 600
+700 REM Padding line 700
+800 REM Padding line 800
+900 REM Padding line 900
+1000 REM Padding line 1000
+1100 REM Padding line 1100
+1200 REM Padding line 1200
+1300 REM Padding line 1300
+1400 REM Padding line 1400
+1500 REM Padding line 1500
+1600 REM Padding line 1600
+1700 REM Padding line 1700
+1800 REM Padding line 1800
+1900 REM Padding line 1900
+2000 REM Padding line 2000
+2100 REM Padding line 2100
+2200 REM Padding line 2200
+2300 REM Padding line 2300
+2400 REM Padding line 2400
+2500 REM Padding line 2500
+2600 REM Padding line 2600
+2700 REM Padding line 2700
+2800 REM Padding line 2800
+2900 REM Padding line 2900
+3000 REM Padding line 3000
+3100 REM Padding line 3100
+3200 REM Padding line 3200
+3300 REM Padding line 3300
+3400 REM Padding line 3400
+3500 REM Padding line 3500
+3600 REM Padding line 3600
+3700 REM Padding line 3700
+3800 REM Padding line 3800
+3900 REM Padding line 3900
+4000 REM Padding line 4000
+4100 REM Padding line 4100
+4200 REM Padding line 4200
+4300 REM Padding line 4300
+4400 REM Padding line 4400
+4500 REM Padding line 4500
+4600 REM Padding line 4600
+4700 REM Padding line 4700
+4800 REM Padding line 4800
+4900 REM Padding line 4900
+5000 REM Padding line 5000
+5100 REM Padding line 5100
+5200 REM Padding line 5200
+5300 REM Padding line 5300
+5400 REM Padding line 5400
+5500 REM Padding line 5500
+5600 REM Padding line 5600
+5700 REM Padding line 5700
+5800 REM Padding line 5800
+5900 REM Padding line 5900
+6000 REM Padding line 6000
+6100 REM Padding line 6100
+6200 REM Padding line 6200
+6300 REM Padding line 6300
+6400 REM Padding line 6400
+6500 REM Padding line 6500
+6600 REM Padding line 6600
+6700 REM Padding line 6700
+6800 REM Padding line 6800
+6900 REM Padding line 6900
+7000 REM Padding line 7000
+7100 REM Padding line 7100
+7200 REM Padding line 7200
+7300 REM Padding line 7300
+7400 REM Padding line 7400
+7500 REM Padding line 7500
+7600 REM Padding line 7600
+7700 REM Padding line 7700
+7800 REM Padding line 7800
+7900 REM Padding line 7900
+8000 REM Padding line 8000
+8100 REM Padding line 8100
+8200 REM Padding line 8200
+8300 REM Padding line 8300
+8400 REM Padding line 8400
+8500 REM Padding line 8500
+8600 REM Padding line 8600
+8700 REM Padding line 8700
+8800 REM Padding line 8800
+8900 REM Padding line 8900
+9000 REM Padding line 9000
+9100 REM Padding line 9100
+9200 REM Padding line 9200
+9300 REM Padding line 9300
+9400 REM Padding line 9400
+9500 REM Padding line 9500
+9600 REM Padding line 9600
+9700 REM Padding line 9700
+9800 REM Padding line 9800
+9900 REM Padding line 9900
+
+REM Main loop - jumps to end of program
+10000 COUNT = COUNT + 1
+10010 IF COUNT >= 5000 THEN GOTO 20000
+10020 GOTO 19000
+
+REM More padding
+10100 REM Padding line 10100
+10200 REM Padding line 10200
+10300 REM Padding line 10300
+10400 REM Padding line 10400
+10500 REM Padding line 10500
+10600 REM Padding line 10600
+10700 REM Padding line 10700
+10800 REM Padding line 10800
+10900 REM Padding line 10900
+11000 REM Padding line 11000
+11100 REM Padding line 11100
+11200 REM Padding line 11200
+11300 REM Padding line 11300
+11400 REM Padding line 11400
+11500 REM Padding line 11500
+11600 REM Padding line 11600
+11700 REM Padding line 11700
+11800 REM Padding line 11800
+11900 REM Padding line 11900
+12000 REM Padding line 12000
+12100 REM Padding line 12100
+12200 REM Padding line 12200
+12300 REM Padding line 12300
+12400 REM Padding line 12400
+12500 REM Padding line 12500
+12600 REM Padding line 12600
+12700 REM Padding line 12700
+12800 REM Padding line 12800
+12900 REM Padding line 12900
+13000 REM Padding line 13000
+13100 REM Padding line 13100
+13200 REM Padding line 13200
+13300 REM Padding line 13300
+13400 REM Padding line 13400
+13500 REM Padding line 13500
+13600 REM Padding line 13600
+13700 REM Padding line 13700
+13800 REM Padding line 13800
+13900 REM Padding line 13900
+14000 REM Padding line 14000
+14100 REM Padding line 14100
+14200 REM Padding line 14200
+14300 REM Padding line 14300
+14400 REM Padding line 14400
+14500 REM Padding line 14500
+14600 REM Padding line 14600
+14700 REM Padding line 14700
+14800 REM Padding line 14800
+14900 REM Padding line 14900
+15000 REM Padding line 15000
+15100 REM Padding line 15100
+15200 REM Padding line 15200
+15300 REM Padding line 15300
+15400 REM Padding line 15400
+15500 REM Padding line 15500
+15600 REM Padding line 15600
+15700 REM Padding line 15700
+15800 REM Padding line 15800
+15900 REM Padding line 15900
+16000 REM Padding line 16000
+16100 REM Padding line 16100
+16200 REM Padding line 16200
+16300 REM Padding line 16300
+16400 REM Padding line 16400
+16500 REM Padding line 16500
+16600 REM Padding line 16600
+16700 REM Padding line 16700
+16800 REM Padding line 16800
+16900 REM Padding line 16900
+17000 REM Padding line 17000
+17100 REM Padding line 17100
+17200 REM Padding line 17200
+17300 REM Padding line 17300
+17400 REM Padding line 17400
+17500 REM Padding line 17500
+17600 REM Padding line 17600
+17700 REM Padding line 17700
+17800 REM Padding line 17800
+17900 REM Padding line 17900
+18000 REM Padding line 18000
+18100 REM Padding line 18100
+18200 REM Padding line 18200
+18300 REM Padding line 18300
+18400 REM Padding line 18400
+18500 REM Padding line 18500
+18600 REM Padding line 18600
+18700 REM Padding line 18700
+18800 REM Padding line 18800
+
+REM Target near end - forces scan through many lines
+19000 X = COUNT * 2
+19010 X = X + 1
+19020 GOTO 10000
+
+REM Final section
+20000 PRINT "Completed: "; COUNT; " iterations"
+20010 PRINT "Each iteration required GOTO to scan through ~180 lines"
+20020 PRINT "Total GOTO statements executed: "; COUNT * 2
+20030 END
