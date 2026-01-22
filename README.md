@@ -156,7 +156,9 @@ Run tests:
 
 ## License
 
-Copyright © 2024-2025 FasterBASIC Project
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright © 2024-2026 FasterBASIC Project
 
 ## Contributing
 
