@@ -2,6 +2,9 @@
 
 [![Build FasterBASIC](https://github.com/albanread/fsh/actions/workflows/build.yml/badge.svg)](https://github.com/albanread/fsh/actions/workflows/build.yml)
 
+![Selfie of simple built-in BASIC terminal editor](docs/selfie.png)
+*Selfie of simple built-in BASIC terminal editor*
+
 FasterBASIC is a very conventional BASIC designed to be extremely familiar to BASIC programmers.
 
 This is a compiler written in C, with a supporting runtime written in C. The final stage of code generation
