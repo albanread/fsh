@@ -24,6 +24,7 @@
 #include "../src/basic_formatter_lib.h"
 #include "../src/fasterbasic_lexer.h"
 #include "../src/fasterbasic_parser.h"
+#include "../src/fasterbasic_data_preprocessor.h"
 #include "../src/modular_commands.h"
 #include "../src/plugin_loader.h"
 #include "../src/fasterbasic_semantic.h"
@@ -922,37 +923,52 @@ bool ShellCore::handleCls(const ParsedCommand& cmd) {
 }
 
 bool ShellCore::handleDir(const ParsedCommand& cmd) {
-    std::string scriptsDir = getBasicScriptsDir();
-    std::string libDir = getBasicLibDir();
-
     std::vector<std::pair<std::string, std::string>> basFiles; // filename, full path
+    std::vector<std::string> searchedDirs;
 
-    // Scan scripts directory
-    DIR* dir = opendir(scriptsDir.c_str());
-    if (dir) {
-        struct dirent* entry;
-        while ((entry = readdir(dir)) != nullptr) {
-            std::string filename = entry->d_name;
-            if (filename.length() > 4 &&
-                filename.substr(filename.length() - 4) == ".bas") {
-                basFiles.push_back({filename, scriptsDir + filename});
+    // Helper lambda to scan a directory for .bas files
+    auto scanDirectory = [&basFiles](const std::string& dirPath, const std::string& prefix = "") {
+        DIR* dir = opendir(dirPath.c_str());
+        if (dir) {
+            struct dirent* entry;
+            while ((entry = readdir(dir)) != nullptr) {
+                std::string filename = entry->d_name;
+                if (filename.length() > 4 &&
+                    filename.substr(filename.length() - 4) == ".bas") {
+                    basFiles.push_back({prefix + filename, dirPath + filename});
+                }
             }
+            closedir(dir);
+            return true;
         }
-        closedir(dir);
+        return false;
+    };
+
+    // 1. Scan current working directory
+    if (scanDirectory("./", "")) {
+        searchedDirs.push_back("./");
     }
 
-    // Scan lib directory
-    dir = opendir(libDir.c_str());
-    if (dir) {
-        struct dirent* entry;
-        while ((entry = readdir(dir)) != nullptr) {
-            std::string filename = entry->d_name;
-            if (filename.length() > 4 &&
-                filename.substr(filename.length() - 4) == ".bas") {
-                basFiles.push_back({"lib/" + filename, libDir + filename});
-            }
-        }
-        closedir(dir);
+    // 2. Scan local BASIC/ directory (relative to current working directory)
+    if (scanDirectory("./BASIC/", "BASIC/")) {
+        searchedDirs.push_back("./BASIC/");
+    }
+
+    // 3. Scan local BASIC/lib/ directory
+    if (scanDirectory("./BASIC/lib/", "BASIC/lib/")) {
+        searchedDirs.push_back("./BASIC/lib/");
+    }
+
+    // 4. Scan home directory BASIC folder as fallback
+    std::string homeScriptsDir = getBasicScriptsDir();
+    if (scanDirectory(homeScriptsDir, "~/" + homeScriptsDir.substr(homeScriptsDir.find("SuperTerminal")))) {
+        searchedDirs.push_back(homeScriptsDir);
+    }
+
+    // 5. Scan home directory BASIC/lib folder as fallback
+    std::string homeLibDir = getBasicLibDir();
+    if (scanDirectory(homeLibDir, "~/lib/")) {
+        searchedDirs.push_back(homeLibDir);
     }
 
     // Sort files alphabetically by display name
@@ -961,8 +977,10 @@ bool ShellCore::handleDir(const ParsedCommand& cmd) {
 
     if (basFiles.empty()) {
         showMessage("No .bas files found");
-        std::cout << "Scripts directory: " << scriptsDir << "\n";
-        std::cout << "Library directory: " << libDir << "\n";
+        std::cout << "Searched directories:\n";
+        for (const auto& dir : searchedDirs) {
+            std::cout << "  " << dir << "\n";
+        }
         return true;
     }
 
@@ -982,9 +1000,7 @@ bool ShellCore::handleDir(const ParsedCommand& cmd) {
             std::cout << "  " << file.first << "\n";
         }
     }
-    std::cout << "\n" << basFiles.size() << " file(s)\n";
-    std::cout << "Scripts: " << scriptsDir << "\n";
-    std::cout << "Library: " << libDir << "\n";
+    std::cout << "\n" << basFiles.size() << " file(s) found\n";
 
     return true;
 }
@@ -1406,13 +1422,19 @@ bool ShellCore::executeCompiledProgram(const std::string& program, int startLine
         // Start timing
         auto compileStartTime = std::chrono::high_resolution_clock::now();
 
+        // Preprocess line numbers to labels (for GOTO/GOSUB targets)
+        if (m_verbose) {
+            std::cout << "Preprocessing line numbers...\n";
+        }
+        std::string preprocessedProgram = DataPreprocessor::preprocessLineNumbersToLabels(program);
+
         // Lexical analysis
         if (m_verbose) {
             std::cout << "Lexing...\n";
         }
 
         Lexer lexer;
-        lexer.tokenize(program);
+        lexer.tokenize(preprocessedProgram);
         auto tokens = lexer.getTokens();
 
         if (tokens.empty()) {
@@ -3150,13 +3172,25 @@ std::string ShellCore::resolveFilePath(const std::string& filename) const {
         return filename;
     }
 
-    // Check in BASIC scripts directory
+    // Check in local BASIC/ directory (relative to current working directory)
+    std::string localBasicPath = "./BASIC/" + filename;
+    if (fileExists(localBasicPath)) {
+        return localBasicPath;
+    }
+
+    // Check in local BASIC/lib/ directory
+    std::string localLibPath = "./BASIC/lib/" + filename;
+    if (fileExists(localLibPath)) {
+        return localLibPath;
+    }
+
+    // Check in home directory BASIC scripts directory as fallback
     std::string scriptsPath = getBasicScriptsDir() + filename;
     if (fileExists(scriptsPath)) {
         return scriptsPath;
     }
 
-    // Then check in lib directory
+    // Then check in home directory lib directory as fallback
     std::string libPath = getBasicLibDir() + filename;
     if (fileExists(libPath)) {
         return libPath;
@@ -3167,7 +3201,7 @@ std::string ShellCore::resolveFilePath(const std::string& filename) const {
     if (filename.find('/') != std::string::npos) {
         return filename;
     }
-    return scriptsPath;
+    return filename;
 }
 
 // =============================================================================
