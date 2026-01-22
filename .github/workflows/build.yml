@@ -3,10 +3,10 @@ name: Build FasterBASIC
 on:
   push:
     branches: [main]
+    tags:
+      - "v*"
   pull_request:
     branches: [main]
-  release:
-    types: [created]
 
 permissions:
   contents: write
@@ -98,7 +98,7 @@ jobs:
   create-release:
     needs: [build-macos, build-linux]
     runs-on: ubuntu-latest
-    if: github.event_name == 'release'
+    if: startsWith(github.ref, 'refs/tags/v')
 
     steps:
       - name: Download all artifacts
@@ -112,7 +112,7 @@ jobs:
           cd fbc-linux && tar -czf ../fbc-linux.tar.gz fbc && cd ..
           ls -lh *.tar.gz
 
-      - name: Upload release assets
+      - name: Create Release and Upload Assets
         uses: softprops/action-gh-release@v1
         with:
           files: |
@@ -120,5 +120,8 @@ jobs:
             fbc-macos.tar.gz
             fbsh-linux.tar.gz
             fbc-linux.tar.gz
+          generate_release_notes: true
+          draft: false
+          prerelease: false
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
